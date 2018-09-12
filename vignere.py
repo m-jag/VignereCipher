@@ -1,3 +1,5 @@
+
+#!/usr/bin/python
 ###############################################
 # Name: vignere.py
 # Author: Matt Jagodzinski
@@ -19,25 +21,35 @@
 # pip3 install matplotlib
 ###############################################
 
-
+import sys, getopt, math
 import numpy as np
 import pandas as pd
 import re
 import time
 import mmap
 import matplotlib.pyplot as plt
+from enum import Enum
 
 verbose=False
 
-get_letters = re.compile(b"([a-zA-Z])")
-to_lower = np.frompyfunc(lambda x: x.lower(), 1, 1)
+# Grabs letters from a file
+def lettersFromFile(filename):
+	letters = np.empty((0))
+	get_letters = re.compile(b"([a-zA-Z])")
 
-fileIn = input("Enter input file : ")
-fileOut = input("Enter output file : ")
-key = to_lower(np.array(re.findall("([a-zA-Z])", input("Enter key: "))))
-#fileOut = "out.txt" #input("Enter file 1: ")
+	with open(filename, "r+b") as f:
+		mm_pt = mmap.mmap(f.fileno(), 0)
+		letters = np.array(get_letters.findall(mm_pt[:]))
+		mm_pt.close()
+		f.close()
 
+	return letters
 
+def writeOutput(output, filename):
+	# Write file to output
+	with open(filename, "w") as f:
+		f.write(output)
+		f.close()
 
 # Functions to convert char/ascii to and from integer
 # representation 0-25 where a = 0, b = 1, ..., z = 25 
@@ -46,56 +58,64 @@ def getLetterValue(c):
 def getLetter(v):
 	return chr(v + ord('a'))
 
-calcLetterValue = np.frompyfunc(getLetterValue, 1, 1)
-calcLetter = np.frompyfunc(getLetter, 1, 1)
+class Mode(Enum):
+	ENCRYPT=0
+	DECRYPT=1
 
-# Calculate the key values 0-25 where a = 0, b = 1, ..., z = 25 
-key_values = calcLetterValue(key)
+def vignere(text, key_values, mode=Mode.ENCRYPT):
+	# Convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25 
+	text = np.frompyfunc(getLetterValue, 1, 1)(text)
 
-#open plaintext
-with open(fileIn, "r+b") as f:
-	mm_pt = mmap.mmap(f.fileno(), 0)
+	if (mode == Mode.ENCRYPT):
+		# Define a universal function fro encryption
+		def encrypt(key_pos):
+			text[key_pos::len(key_values)] = (text[key_pos::len(key_values)] + key_values[key_pos]) % 26
+		encrypt = np.frompyfunc(encrypt, 1, 1)
+
+		encrypt(np.arange(len(key_values)))
+	elif (mode == Mode.DECRYPT):
+		# Define a universal function for decryption
+		def decrypt(key_pos):
+			text[key_pos::len(key_values)] = (text[key_pos::len(key_values)] - key_values[key_pos]) % 26
+		decrypt = np.frompyfunc(decrypt, 1, 1)
+
+		decrypt(np.arange(len(key_values)))
+
+	return ''.join(np.frompyfunc(getLetter, 1, 1)(text))
+
+def main(argv):
+	# Universal functions
+	# Converts numpy array of chars or strings to lower case
+	to_lower = np.frompyfunc(lambda x: x.lower(), 1, 1)
+	# Convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25 
+	calcLetterValue = np.frompyfunc(getLetterValue, 1, 1)
+	# Convert integer representation to char/ascii
+	calcLetter = np.frompyfunc(getLetter, 1, 1)
+
+	fileIn = input("Enter input file : ")
+	fileOut = input("Enter output file : ")
+	key = to_lower(np.array(re.findall("([a-zA-Z])", input("Enter key: "))))
+	
+	# Calculate the key values 0-25 where a = 0, b = 1, ..., z = 25 
+	key_values = calcLetterValue(key)
 	# store all the letters as lowercase in numpy array message
-	message = to_lower(np.array(get_letters.findall(mm_pt[:])))
+	plaintext = to_lower(lettersFromFile(fileIn))
 
 	if (verbose):
 		print('plaintext')
-		print(''.join(np.frompyfunc(lambda x: chr(ord(x)), 1, 1)(message)))
-	
-	# Define a universal function for encryption
-	def encrypt(key_pos):
-		message[key_pos::len(key_values)] = (message[key_pos::len(key_values)] + key_values[key_pos]) % 26
-	encrypt = np.frompyfunc(encrypt, 1, 1)
+		print(''.join(np.frompyfunc(lambda x: chr(ord(x)), 1, 1)(plaintext)))
 
-	# Define a universal function for decryption
-	def decrypt(key_pos):
-		message[key_pos::len(key_values)] = (message[key_pos::len(key_values)] - key_values[key_pos]) % 26
-	decrypt = np.frompyfunc(decrypt, 1, 1)
-
-	# convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25 
-	message = calcLetterValue(message)
-
-	# Encrypt the message here
-	# note: encrypted/decrypted message is currently being stored as the same variable (message)
-	encrypt(np.arange(len(key_values)))
-	# Decrypt the message here
-	#decrypt(np.arange(len(key_values)))
-
-	# Convert from integer representation to char/ascii and join array values
-	message = ''.join(calcLetter(message))
+	plaintext = vignere(plaintext, key_values)
 
 	if (verbose):
 		print('ciphertext')
-		print(message)
-	
-	mm_pt.close()
-	f.close()
-del mm_pt
+		print(plaintext)
 
-# Write file to output
-with open(fileOut, "w") as f:
-	f.write(message)
-	f.close()
+	writeOutput(plaintext, fileOut)
 
-# Notify user of encryption being done
-print('Encrypted %s to %s' % (fileIn, fileOut))
+	# Notify user of encryption being done
+	print('Encrypted %s to %s' % (fileIn, fileOut))
+
+
+if __name__ == "__main__":
+	main(sys.argv[1:])
