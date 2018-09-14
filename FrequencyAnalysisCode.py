@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 ###############################################
 # Name: FrequencyAnalysisCode.py
 # Author: Matt Jagodzinski
-# 
-# Description: Calculates letter frequencies 
+#
+# Description: Calculates letter frequencies
 # and probabilities for 2 text files
 #
 #

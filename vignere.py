@@ -1,14 +1,13 @@
-
-#!/usr/bin/python
+#!/usr/bin/env python3
 ###############################################
 # Name: vignere.py
 # Author: Matt Jagodzinski
-# 
-# Description: Encrypts input file using vignere 
+#
+# Description: Encrypts input file using vignere
 # cipher with key passed as input and stores the
 # encrypted file in the output file
 #
-# Example Use: 
+# Example Use:
 # python3 vignere.py
 # Enter input file : in.txt
 # Enter output file : out.txt
@@ -52,7 +51,7 @@ def writeOutput(output, filename):
 		f.close()
 
 # Functions to convert char/ascii to and from integer
-# representation 0-25 where a = 0, b = 1, ..., z = 25 
+# representation 0-25 where a = 0, b = 1, ..., z = 25
 def getLetterValue(c):
 	return ord(c.lower()) - ord('a')
 def getLetter(v):
@@ -63,7 +62,7 @@ class Mode(Enum):
 	DECRYPT=1
 
 def vignere(text, key_values, mode=Mode.ENCRYPT):
-	# Convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25 
+	# Convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25
 	text = np.frompyfunc(getLetterValue, 1, 1)(text)
 
 	if (mode == Mode.ENCRYPT):
@@ -87,7 +86,7 @@ def main(argv):
 	# Universal functions
 	# Converts numpy array of chars or strings to lower case
 	to_lower = np.frompyfunc(lambda x: x.lower(), 1, 1)
-	# Convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25 
+	# Convert char/ascii to integer representation 0-25 where a = 0, b = 1, ..., z = 25
 	calcLetterValue = np.frompyfunc(getLetterValue, 1, 1)
 	# Convert integer representation to char/ascii
 	calcLetter = np.frompyfunc(getLetter, 1, 1)
@@ -95,8 +94,8 @@ def main(argv):
 	fileIn = input("Enter input file : ")
 	fileOut = input("Enter output file : ")
 	key = to_lower(np.array(re.findall("([a-zA-Z])", input("Enter key: "))))
-	
-	# Calculate the key values 0-25 where a = 0, b = 1, ..., z = 25 
+
+	# Calculate the key values 0-25 where a = 0, b = 1, ..., z = 25
 	key_values = calcLetterValue(key)
 	# store all the letters as lowercase in numpy array message
 	plaintext = to_lower(lettersFromFile(fileIn))
